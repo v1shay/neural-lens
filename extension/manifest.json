@@ -1,5 +1,21 @@
 {
-  "manifest_version": 2,
-  "name": "agentic-data-insight-extension",
-  "version": "0.0.1"
+  "manifest_version": 3,
+  "name": "Agentic Data Insight",
+  "version": "0.1.0",
+  "description": "Agentic AI system for analyzing highlighted text and on-screen context.",
+
+  "permissions": ["scripting", "activeTab"],
+
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/selection.js"]
+    }
+  ]
 }
