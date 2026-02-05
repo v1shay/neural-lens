@@ -1,22 +1,101 @@
+/* Import a niche but classy font */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --bg: #0e1117;
+  --panel: #161b22;
+  --accent: #7c8cff;
+  --accent-soft: rgba(124, 140, 255, 0.15);
+  --text-primary: #e6edf3;
+  --text-secondary: #9da7b3;
+  --success: #3ddc97;
+}
+
 body {
   margin: 0;
-  padding: 12px;
-  font-family: system-ui, -apple-system, sans-serif;
-  width: 300px;
+  padding: 14px;
+  width: 320px;
+
+  font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+
+  background: var(--bg);
+  color: var(--text-primary);
+
+  letter-spacing: -0.01em;
 }
 
 h2 {
-  margin-top: 0;
-}
-
-.box {
-  margin-top: 10px;
-  padding: 8px;
-  border-radius: 6px;
-  background: #f3f3f3;
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .status {
-  color: green;
-  font-size: 12px;
+  font-size: 11px;
+  color: var(--success);
+  margin-bottom: 10px;
+  opacity: 0.85;
+}
+
+.box {
+  margin-top: 12px;
+  padding: 12px;
+
+  border-radius: 10px;
+  background: linear-gradient(
+    180deg,
+    var(--panel),
+    rgba(22, 27, 34, 0.9)
+  );
+
+  border: 1px solid rgba(255, 255, 255, 0.04);
+
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.box strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+#selection {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+#selection small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Subtle highlight effect for insight output */
+ul {
+  margin: 8px 0 0 16px;
+  padding: 0;
+}
+
+li {
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+
+li::marker {
+  color: var(--accent);
+}
+
+/* Nice selection highlight */
+::selection {
+  background: var(--accent-soft);
 }
