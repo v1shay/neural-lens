@@ -1,4 +1,4 @@
-# Agentic Data Insight
+# Neural Lens
 
 Agentic Data Insight is an early-stage project exploring how agentic AI systems can provide useful insights on user-selected text and images directly within their workflow.
 
@@ -51,3 +51,4 @@ This repository exists to explore:
 - How memory and decision-making can be handled explicitly
 
 Functionality will be added gradually as the design solidifies.
+
