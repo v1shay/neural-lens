@@ -1,15 +1,12 @@
 // background.js — Manifest V3 service worker
 // Central orchestrator for Agentic Data Insight
 
-// This log confirms the service worker was registered
 console.log("[INSIGHT ON] hey twin");
 
-// Fired when the extension is installed or reloaded
 chrome.runtime.onInstalled.addListener(() => {
   console.log("[INSIGHT ON] we installed");
 });
 
-// Fired when Chrome starts
 chrome.runtime.onStartup.addListener(() => {
   console.log("[INSIGHT ON] onStartup");
 });
@@ -22,21 +19,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "TEXT_SELECTED":
       console.log("[ADI BG] Text received:", message.payload);
 
-      // Store latest selection for UI hydration
       chrome.storage.local.set({
         lastSelection: message.payload
       });
 
-      // Forward to panel (popup listeners)
       chrome.runtime.sendMessage({
         type: "SELECTION_UPDATED",
         payload: message.payload
       });
 
-      // 🔹 NEW: trigger analysis when coming from runtime channel
       analyzeSelection(message.payload);
 
-      // Acknowledge receipt (prevents MV3 race errors)
       sendResponse({ ok: true });
       break;
 
@@ -51,10 +44,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
    MV3 PORT + ANALYSIS PIPELINE (ORIGINAL STRUCTURE PRESERVED)
 ------------------------------------------------------------------- */
 
-// Persistent ports (content scripts)
 const ports = new Set();
 
-// Handle long-lived connections (MV3-safe)
 chrome.runtime.onConnect.addListener((port) => {
   console.log("[ADI BG] Port connected:", port.name);
   ports.add(port);
@@ -65,12 +56,10 @@ chrome.runtime.onConnect.addListener((port) => {
     if (msg.type === "TEXT_SELECTED") {
       console.log("[ADI BG] Port text received:", msg.payload);
 
-      // Persist
       chrome.storage.local.set({
         lastSelection: msg.payload
       });
 
-      // Fan-out selection update to port listeners
       ports.forEach((p) => {
         try {
           p.postMessage({
@@ -82,13 +71,11 @@ chrome.runtime.onConnect.addListener((port) => {
         }
       });
 
-      // ALSO notify popup listeners (NEW — fixes UI hang)
       chrome.runtime.sendMessage({
         type: "SELECTION_UPDATED",
         payload: msg.payload
       });
 
-      // Trigger backend analysis
       analyzeSelection(msg.payload);
     }
   });
@@ -99,18 +86,27 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
-// Lightweight analysis stub (upgrade later to agents)
+// 🔧 FIXED: timeout + real error signaling
 async function analyzeSelection(payload) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s hard stop
+
   try {
-    const response = await fetch("http://localhost:8000/analyze", {
+    const response = await fetch("http://127.0.0.1:8000/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: payload.text })
+      body: JSON.stringify({ text: payload.text }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Backend responded ${response.status}`);
+    }
 
     const result = await response.json();
 
-    // Broadcast analysis results to PORT listeners (original behavior)
     ports.forEach((p) => {
       try {
         p.postMessage({
@@ -122,22 +118,33 @@ async function analyzeSelection(payload) {
       }
     });
 
-    // 🔑 NEW: also broadcast to popup via runtime channel
     chrome.runtime.sendMessage({
       type: "ANALYSIS_RESULT",
       payload: result
     });
 
   } catch (err) {
-    console.warn("[ADI BG] Analysis unavailable", err);
+    clearTimeout(timeoutId);
+    console.warn("[ADI BG] Analysis failed:", err);
 
-    // 🔑 NEW: fail gracefully instead of infinite "Analyzing…"
-    chrome.runtime.sendMessage({
-      type: "ANALYSIS_RESULT",
-      payload: {
-        summary: "Analysis failed",
-        insights: ["Backend unavailable or error occurred"]
+    const errorPayload = {
+      message: "Backend not running or request timed out"
+    };
+
+    ports.forEach((p) => {
+      try {
+        p.postMessage({
+          type: "ANALYSIS_ERROR",
+          payload: errorPayload
+        });
+      } catch (e) {
+        console.warn("[ADI BG] Error broadcast failed", e);
       }
+    });
+
+    chrome.runtime.sendMessage({
+      type: "ANALYSIS_ERROR",
+      payload: errorPayload
     });
   }
 }

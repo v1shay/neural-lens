@@ -6,7 +6,7 @@ let lastTime = 0;
 
 function getPort() {
   if (!port) {
-    port = chrome.runtime.connect({ name: "adi-port" });
+    port = chrome.runtime.connect({ name: "selection-port" });
 
     port.onDisconnect.addListener(() => {
       console.warn("[INSIGHT] Port disconnected, resetting");
@@ -14,6 +14,21 @@ function getPort() {
     });
   }
   return port;
+}
+
+function safePostMessage(message) {
+  try {
+    getPort().postMessage(message);
+  } catch (e) {
+    console.warn("[INSIGHT] selection send failed, retrying", e);
+    port = null;
+
+    try {
+      getPort().postMessage(message);
+    } catch (err) {
+      console.error("[INSIGHT] retry failed", err);
+    }
+  }
 }
 
 document.addEventListener("mouseup", () => {
@@ -39,14 +54,10 @@ document.addEventListener("mouseup", () => {
 
   console.log("[INSIGHT] Selected text:", payload);
 
-  try {
-    getPort().postMessage({
-      type: "TEXT_SELECTED",
-      payload
-    });
-  } catch (e) {
-    console.warn("[INSIGHT] selection send failed", e);
-  }
+  safePostMessage({
+    type: "TEXT_SELECTED",
+    payload
+  });
 
   // Persist for UI panel hydration
   chrome.storage.local.set({
