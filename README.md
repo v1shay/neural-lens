@@ -1,54 +1,55 @@
 # Neural Lens
-
-Agentic Data Insight is an early-stage project exploring how agentic AI systems can provide useful insights on user-selected text and images directly within their workflow.
-
-The goal of the project is to move beyond prompt-based chat tools and experiment with an AI system that can observe context, infer intent, and take structured actions over time.
+> Real-time, in-context data analysis from on-page user selections, backed by a modular analysis pipeline.
 
 ---
 
-## What This Project Is
-
-- A learning and experimentation project focused on **agentic AI architecture**
-- A system designed to analyze highlighted text or images and respond intelligently
-- A combination of a browser-based interface and a Python backend
-- A work in progress, built incrementally
-
----
-
-## What This Project Is Not (Yet)
-
-- Not a finished product
-- Not production-ready
-- Not optimized for performance or scale
-- Not fully implemented
-
-The current focus is on **architecture, structure, and correctness**, not completeness.
+## Features
+- Real-time capture of user-selected content directly from the browser  
+- Manifest V3 Chrome extension with persistent background processing  
+- FastAPI backend for structured analysis and response routing  
+- Modular analysis pipeline that can be extended with new models or tools  
+- Shared context between page state, user input, and backend analysis  
 
 ---
 
-## High-Level Structure
+## Why This Exists
+Most tools that analyze text or content lose context. They require copy-pasting, manual prompts, or switching tabs, which breaks flow and strips away the surrounding information that often matters most.
 
-- **Frontend**: A browser extension responsible for capturing user context and displaying responses
-- **Backend**: An agent-based Python service responsible for reasoning and decision-making
-- **Documentation**: Design notes outlining architecture and future direction
-
----
-
-## Current Status
-
-- Project structure and architecture defined
-- Core files and folders scaffolded
-- Initial agent skeletons in place
-- Implementation will proceed step by step
+Neural Lens keeps analysis where the data already lives: on the page, in real time, with full awareness of what the user is actually looking at.
 
 ---
 
-## Purpose
+## How It Works
+Neural Lens is split cleanly between the browser and the backend.
 
-This repository exists to explore:
-- How agentic systems can be structured cleanly
-- How responsibilities can be separated across agents
-- How memory and decision-making can be handled explicitly
+1. A user selects text or content on a webpage  
+2. The Manifest V3 extension captures the selection along with page context  
+3. This context is sent to a FastAPI backend  
+4. The backend routes the data through a modular analysis pipeline  
+5. Results are returned to the extension for display or further action  
 
-Functionality will be added gradually as the design solidifies.
+Each part is isolated so new analysis modules can be added without touching the rest of the system.
 
+---
+
+## Tech Stack
+- **Frontend:** Chrome Extension (Manifest V3)  
+- **Backend:** FastAPI  
+- **Language:** Python, JavaScript  
+- **Architecture:** Modular analysis pipeline  
+
+---
+
+## Project Structure
+```text
+neural-lens/
+├── extension/
+│   ├── background.js
+│   ├── content.js
+│   └── manifest.json
+├── backend/
+│   ├── main.py
+│   ├── routers/
+│   └── analyzers/
+├── shared/
+└── README.md
