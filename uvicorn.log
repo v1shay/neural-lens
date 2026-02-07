@@ -25,3 +25,4 @@ INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     127.0.0.1:60148 - "POST /analyze HTTP/1.1" 200 OK
 INFO:     127.0.0.1:60180 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61786 - "POST /analyze HTTP/1.1" 200 OK
