@@ -4,6 +4,9 @@ const selectionEl = document.getElementById("selection");
 
 hydrate();
 
+/* -------------------------------------------------------
+   Runtime message listener (optional live updates)
+-------------------------------------------------------- */
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || !msg.type) return;
 
@@ -22,7 +25,12 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
+/* -------------------------------------------------------
+   Hydration from storage (PRIMARY SOURCE OF TRUTH)
+-------------------------------------------------------- */
 function hydrate() {
+  selectionEl.textContent = "Analyzing…";
+
   chrome.storage.local.get(
     ["lastSelection", "lastAnalysis", "lastAnalysisError"],
     (res) => {
@@ -30,9 +38,10 @@ function hydrate() {
         renderSelection(res.lastSelection);
       } else {
         selectionEl.textContent = "Highlight text on a page";
+        return;
       }
 
-      if (res.lastAnalysis?.summary && Array.isArray(res.lastAnalysis?.insights)) {
+      if (res.lastAnalysis?.summary && Array.isArray(res.lastAnalysis.insights)) {
         renderAnalysis(res.lastAnalysis);
       } else if (res.lastAnalysisError?.message) {
         renderError(res.lastAnalysisError);
@@ -41,6 +50,9 @@ function hydrate() {
   );
 }
 
+/* -------------------------------------------------------
+   Rendering helpers
+-------------------------------------------------------- */
 function escapeHtml(s) {
   return String(s)
     .replaceAll("&", "&amp;")
@@ -64,7 +76,9 @@ function renderSelection(payload) {
 
 function renderAnalysis(result) {
   const summary = escapeHtml(result.summary);
-  const items = (result.insights || []).map((i) => `<li>${escapeHtml(i)}</li>`).join("");
+  const items = (result.insights || [])
+    .map((i) => `<li>${escapeHtml(i)}</li>`)
+    .join("");
 
   selectionEl.innerHTML = `
     <strong>${summary}</strong>
@@ -73,6 +87,12 @@ function renderAnalysis(result) {
 }
 
 function renderError(err) {
-  const msg = err?.message ? escapeHtml(err.message) : "Unknown analysis error";
-  selectionEl.innerHTML = `<strong>Analysis error</strong><br /><small>${msg}</small>`;
+  const msg = err?.message
+    ? escapeHtml(err.message)
+    : "Unknown analysis error";
+
+  selectionEl.innerHTML = `
+    <strong>Analysis error</strong><br />
+    <small>${msg}</small>
+  `;
 }

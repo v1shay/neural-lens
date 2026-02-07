@@ -3,6 +3,20 @@
 
 console.log("[INSIGHT ON] hey twin");
 
+/* -------------------------------------------------------
+   SAFE BROADCAST (MV3 popup may not exist)
+-------------------------------------------------------- */
+function safeBroadcast(message) {
+  try {
+    chrome.runtime.sendMessage(message);
+  } catch (e) {
+    // Popup not open — expected in MV3
+  }
+}
+
+/* -------------------------------------------------------
+   Lifecycle logs
+-------------------------------------------------------- */
 chrome.runtime.onInstalled.addListener(() => {
   console.log("[INSIGHT ON] we installed");
 });
@@ -11,7 +25,9 @@ chrome.runtime.onStartup.addListener(() => {
   console.log("[INSIGHT ON] onStartup");
 });
 
-// SAFE message listener (MV3-compliant)
+/* -------------------------------------------------------
+   One-off message listener (content scripts)
+-------------------------------------------------------- */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || !message.type) return;
 
@@ -23,7 +39,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         lastSelection: message.payload
       });
 
-      chrome.runtime.sendMessage({
+      safeBroadcast({
         type: "SELECTION_UPDATED",
         payload: message.payload
       });
@@ -40,9 +56,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true;
 });
 
-/* ------------------------------------------------------------------
-   MV3 PORT + ANALYSIS PIPELINE (ORIGINAL STRUCTURE PRESERVED)
-------------------------------------------------------------------- */
+/* -------------------------------------------------------
+   MV3 PORT + ANALYSIS PIPELINE (ORIGINAL STRUCTURE)
+-------------------------------------------------------- */
 
 const ports = new Set();
 
@@ -60,18 +76,19 @@ chrome.runtime.onConnect.addListener((port) => {
         lastSelection: msg.payload
       });
 
+      // Broadcast to all live ports
       ports.forEach((p) => {
         try {
           p.postMessage({
             type: "SELECTION_UPDATED",
             payload: msg.payload
           });
-        } catch (e) {
-          console.warn("[ADI BG] Port send failed", e);
+        } catch {
+          ports.delete(p); // 🔧 prune dead ports
         }
       });
 
-      chrome.runtime.sendMessage({
+      safeBroadcast({
         type: "SELECTION_UPDATED",
         payload: msg.payload
       });
@@ -86,10 +103,13 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
-// 🔧 FIXED: timeout + real error signaling
+/* -------------------------------------------------------
+   Analysis pipeline (backend → storage → UI hydration)
+-------------------------------------------------------- */
+
 async function analyzeSelection(payload) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s hard stop
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
 
   try {
     const response = await fetch("http://127.0.0.1:8000/analyze", {
@@ -107,24 +127,26 @@ async function analyzeSelection(payload) {
 
     const result = await response.json();
 
-    // Persist for UI hydration when panel opens later
+    // Persist for popup hydration
     chrome.storage.local.set({
       lastAnalysis: result,
-      lastAnalysisAt: Date.now(),
+      lastAnalysisError: null,
+      lastAnalysisAt: Date.now()
     });
 
+    // Broadcast to live ports only
     ports.forEach((p) => {
       try {
         p.postMessage({
           type: "ANALYSIS_RESULT",
           payload: result
         });
-      } catch (e) {
-        console.warn("[ADI BG] Analysis broadcast failed", e);
+      } catch {
+        ports.delete(p);
       }
     });
 
-    chrome.runtime.sendMessage({
+    safeBroadcast({
       type: "ANALYSIS_RESULT",
       payload: result
     });
@@ -139,7 +161,8 @@ async function analyzeSelection(payload) {
 
     chrome.storage.local.set({
       lastAnalysisError: errorPayload,
-      lastAnalysisAt: Date.now(),
+      lastAnalysis: null,
+      lastAnalysisAt: Date.now()
     });
 
     ports.forEach((p) => {
@@ -148,12 +171,12 @@ async function analyzeSelection(payload) {
           type: "ANALYSIS_ERROR",
           payload: errorPayload
         });
-      } catch (e) {
-        console.warn("[ADI BG] Error broadcast failed", e);
+      } catch {
+        ports.delete(p);
       }
     });
 
-    chrome.runtime.sendMessage({
+    safeBroadcast({
       type: "ANALYSIS_ERROR",
       payload: errorPayload
     });

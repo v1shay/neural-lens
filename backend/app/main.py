@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import requests
 from collections import Counter
 
 from fastapi import FastAPI
