@@ -8,8 +8,11 @@ console.log("[INSIGHT ON] hey twin");
 -------------------------------------------------------- */
 function safeBroadcast(message) {
   try {
-    chrome.runtime.sendMessage(message);
-  } catch (e) {
+    chrome.runtime.sendMessage(message, () => {
+      // Silence "Receiving end does not exist" when popup isn't open.
+      void chrome.runtime.lastError;
+    });
+  } catch {
     // Popup not open — expected in MV3
   }
 }
@@ -109,7 +112,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
 async function analyzeSelection(payload) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  // Ollama can be slow; keep this comfortably above typical generation time.
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
     const response = await fetch("http://127.0.0.1:8000/analyze", {
