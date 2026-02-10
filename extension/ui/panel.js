@@ -42,14 +42,24 @@ function hydrate() {
   selectionEl.textContent = "Highlight text on a page";
 
   chrome.storage.local.get(
-    ["lastSelection", "lastAnalysis", "lastAnalysisError"],
+    ["lastSelection", "lastAnalysis", "lastAnalysisAt", "lastAnalysisError"],
     (res) => {
-      if (res.lastSelection?.text) {
-        renderSelection(res.lastSelection);
+      // Only render analysis created AFTER popup opened
+      if (
+        res.lastAnalysis &&
+        res.lastAnalysisAt &&
+        res.lastAnalysisAt >= SESSION_START
+      ) {
+        renderAnalysis(res.lastAnalysis);
+        return;
       }
+
+      // Otherwise stay blank
+      selectionEl.textContent = "Highlight text on a page";
     }
   );
 }
+
 
 /* -------------------------------------------------------
    Rendering helpers
