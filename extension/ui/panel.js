@@ -1,3 +1,5 @@
+const SESSION_START = Date.now();
+
 console.log("[ADI UI] panel loaded");
 
 const selectionEl = document.getElementById("selection");
