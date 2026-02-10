@@ -38,8 +38,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "TEXT_SELECTED":
       console.log("[ADI BG] Text received:", message.payload);
 
+      // ✅ CLEAR previous analysis on new selection
       chrome.storage.local.set({
-        lastSelection: message.payload
+        lastSelection: message.payload,
+        lastAnalysis: null,
+        lastAnalysisError: null
       });
 
       safeBroadcast({
@@ -75,8 +78,11 @@ chrome.runtime.onConnect.addListener((port) => {
     if (msg.type === "TEXT_SELECTED") {
       console.log("[ADI BG] Port text received:", msg.payload);
 
+      // ✅ CLEAR previous analysis on new selection
       chrome.storage.local.set({
-        lastSelection: msg.payload
+        lastSelection: msg.payload,
+        lastAnalysis: null,
+        lastAnalysisError: null
       });
 
       // Broadcast to all live ports

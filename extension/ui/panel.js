@@ -2,10 +2,18 @@ console.log("[ADI UI] panel loaded");
 
 const selectionEl = document.getElementById("selection");
 
+/* -------------------------------------------------------
+   Clear stale analysis every popup open
+-------------------------------------------------------- */
+chrome.storage.local.remove([
+  "lastAnalysis",
+  "lastAnalysisError"
+]);
+
 hydrate();
 
 /* -------------------------------------------------------
-   Runtime message listener (optional live updates)
+   Runtime message listener (live updates)
 -------------------------------------------------------- */
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || !msg.type) return;
@@ -26,25 +34,16 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 /* -------------------------------------------------------
-   Hydration from storage (PRIMARY SOURCE OF TRUTH)
+   Hydration from storage
 -------------------------------------------------------- */
 function hydrate() {
-  selectionEl.textContent = "Analyzing…";
+  selectionEl.textContent = "Highlight text on a page";
 
   chrome.storage.local.get(
     ["lastSelection", "lastAnalysis", "lastAnalysisError"],
     (res) => {
       if (res.lastSelection?.text) {
         renderSelection(res.lastSelection);
-      } else {
-        selectionEl.textContent = "Highlight text on a page";
-        return;
-      }
-
-      if (res.lastAnalysis?.summary && Array.isArray(res.lastAnalysis.insights)) {
-        renderAnalysis(res.lastAnalysis);
-      } else if (res.lastAnalysisError?.message) {
-        renderError(res.lastAnalysisError);
       }
     }
   );
@@ -69,8 +68,11 @@ function renderSelection(payload) {
   selectionEl.innerHTML = `
     <em>${text}</em>
     ${title ? `<br /><small>${title}</small>` : ""}
-    <br />
-    <span style="opacity: 0.7;">Analyzing…</span>
+    <div class="loading">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
   `;
 }
 
