@@ -1,21 +1,21 @@
-const SESSION_START = Date.now();
-
 console.log("[ADI UI] panel loaded");
 
 const selectionEl = document.getElementById("selection");
 
 /* -------------------------------------------------------
-   Clear stale analysis every popup open
+   Hard reset on popup open (reliable MV3 behavior)
 -------------------------------------------------------- */
 chrome.storage.local.remove([
+  "lastSelection",
   "lastAnalysis",
-  "lastAnalysisError"
+  "lastAnalysisError",
+  "lastAnalysisAt"
 ]);
 
-hydrate();
+selectionEl.textContent = "Highlight text on a page";
 
 /* -------------------------------------------------------
-   Runtime message listener (live updates)
+   Runtime message listener (ONLY source of truth)
 -------------------------------------------------------- */
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg || !msg.type) return;
@@ -34,32 +34,6 @@ chrome.runtime.onMessage.addListener((msg) => {
     renderError(msg.payload);
   }
 });
-
-/* -------------------------------------------------------
-   Hydration from storage
--------------------------------------------------------- */
-function hydrate() {
-  selectionEl.textContent = "Highlight text on a page";
-
-  chrome.storage.local.get(
-    ["lastSelection", "lastAnalysis", "lastAnalysisAt", "lastAnalysisError"],
-    (res) => {
-      // Only render analysis created AFTER popup opened
-      if (
-        res.lastAnalysis &&
-        res.lastAnalysisAt &&
-        res.lastAnalysisAt >= SESSION_START
-      ) {
-        renderAnalysis(res.lastAnalysis);
-        return;
-      }
-
-      // Otherwise stay blank
-      selectionEl.textContent = "Highlight text on a page";
-    }
-  );
-}
-
 
 /* -------------------------------------------------------
    Rendering helpers
